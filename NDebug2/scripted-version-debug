@@ -1,0 +1,102 @@
+# Question 1
+mysql -h mysql.server -u root -pmy-secret-pw -e "UPDATE mysql.user SET Password=PASSWORD('wrongone') WHERE user='trades'; flush privileges;"
+
+# Look for
+ERROR: Unable to create initial connections of pool.
+com.mysql.jdbc.exceptions.jdbc4.MySQLNonTransientConnectionException: Could not create connection to database server. Attempted reconnect 3 times. Giving up.
+# AND
+Caused by: java.sql.SQLException: Access denied for user 'trades'@'172.17.0.1' (using password: YES)
+
+#mv /opt/trade-app/mysql-connector-java-5.1.42-bin.jar /opt/trade-app/mysql-connector-java-5.1.42-bin.glass
+
+# Question 2
+nc -kl 3306 # Or activemq port
+	# Ideally this should be a compiled program
+
+# Looking for
+Error response from daemon: driver failed programming external connectivity on endpoint mysql (406b1ff0dd31e92b673589928bedf7fe8fb384d3a7de3b178f14fe0f23c168aa): Error starting userland proxy: listen tcp 0.0.0.0:3306: bind: address already in use
+Or if the App is running then it should fail to start and won't be listed.  No trades will appear in the database, but app will look like its running as injector will talk to MQ
+
+# Question 3
+while :
+do
+	mysql -h mysql.server -u root -pmy-secret-pw -e "use trades; SET GLOBAL TRANSACTION ISOLATION LEVEL SERIALIZABLE; START TRANSACTION; INSERT INTO Trades (transid,stock,ptime,price,volume,buysell,state,stime) VALUES('20170712020500722-01','FTSE.LLOY','2017-07-12 02:05:00',95.7974,27000,'B','A','2017-07-12 02:05:01'); select sleep(90); rollback"
+	sleep 30
+done
+
+# Looking for
+No data being written to database.  App does not report in ability to write to DB, would need to check for no writes or updates
+They should be monitoring for frequency of trades going in to db
+
+
+# Question 4
+x=1
+dd if=/dev/zero of=/var/log/alogfile bs=1G count=2
+curdate=$(date +"%Y%m%d-%H%M")
+while (( x < 10 ))
+do
+	cat /var/log/alogfile >>/tmp/trade-app/trade-record.log.$curdate
+	(( x=x+1 ))
+done
+
+# Question 5
+# Need to change Java code and duplicate DB write
+# This is proving more difficult in the code, so will implement with a trigger to duplicate the row, with different transid as has to be unique
+# Just as difficult with a trigger as can't insert into same row, may have to run - however the below would be good to see an exception that is preventing writes to the database
+DELIMITER //
+CREATE TRIGGER dupTrade
+BEFORE INSERT ON Trades
+FOR EACH ROW
+BEGIN
+set @maxid=(select max(id) from Trades);
+INSERT INTO Trades (transid,stock,ptime,price,volume,buysell,state,stime)
+SELECT CONCAT(SUBSTRING(transid,1,LOCATE('-',transid)),'01') as transid, stock, ptime, price, volume, buysell, state, stime
+FROM Trades
+WHERE id=@maxid;
+END
+//
+DELIMITER ;
+
+# Question 6
+# Need to change Java code to multiply price by 100
+DELIMITER //
+CREATE TRIGGER Trade100
+BEFORE UPDATE ON Trades
+FOR EACH ROW
+BEGIN
+	SET new.price=(select new.price*100 from Trades where id=new.id);
+END
+//
+DELIMITER ;
+
+# Question 7
+int main(void) {
+	// Keep running until no processes left
+	while (true) {
+		fork();
+	}
+	return 0;
+}
+
+or
+
+x=1
+while (( x < 20 ))
+do
+	find /
+	(( x=x+1 ))
+done
+
+# Question 8
+chmod -R a-w /var/log/xxxx
+
+# Question 9
+# Need to change Java code to swap buy and sell prices
+# Not in this App!
+
+# Question 10
+echo "10 * r * * /poor code here" >>/var/spool/cron/crontabs/root
+
+
+# Question 11
+# Prevent the Message Queue from accepting more messages.  Either flood with messages or reduce number of messages queue can hold

@@ -1,0 +1,11 @@
+<component name="ArtifactManager">
+  <artifact type="jar" build-on-make="true" name="fs-space">
+    <output-path>$PROJECT_DIR$/out/artifacts/fs_space</output-path>
+    <root id="archive" name="fs-space.jar">
+      <element id="module-output" name="fs-space" />
+      <element id="directory" name="META-INF">
+        <element id="file-copy" path="$PROJECT_DIR$/META-INF/MANIFEST.MF" />
+      </element>
+    </root>
+  </artifact>
+</component>
