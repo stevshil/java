@@ -1,16 +1,15 @@
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.regex.Pattern;
 import java.text.NumberFormat;
+import java.util.Arrays;
+
+import static java.nio.file.FileVisitResult.*;
 
 import static java.sql.Connection.TRANSACTION_SERIALIZABLE;
 
@@ -45,7 +44,8 @@ public class Main
         String runAttribute2 ="";
         if ( args.length <= 0 ) {
             System.err.println("You need to specify one of the following;");
-            menu();
+            //menu();
+            System.err.println("Consult the manual to see how to run this command");
             System.exit(1);
         }
 
@@ -384,33 +384,86 @@ public class Main
     }
 
     private static void slowDownProcesses(int howMany) {
-        ExecutorService exec = Executors.newFixedThreadPool(howMany);
-        for (int numProcesses = 0; numProcesses < howMany; numProcesses++) {
-            exec.execute(new runProcesses());
+
+        for (int x=0; x <= howMany; x++) {
+            new Thread(""+x) {
+                public void run() {
+                    String theFile;
+
+                    if (OS.indexOf("win") >= 0) {
+                        //cmd = "fsutil file createnew C:\\temp\\alogfile.txt 2000000000";
+                        theFile="C:\temp\rubbish.txt";
+                    } else {
+                        theFile="/tmp/rubbish.txt";
+                    }
+                    File file = new File(theFile);
+                    /*
+                    // This will allow write of output to variable
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    PrintStream ps = new PrintStream(baos);
+                    PrintStream old = System.out;
+                    */
+                    try {
+                        FileOutputStream fos = new FileOutputStream(file);
+                        PrintStream ps = new PrintStream(fos);
+                        // Capture STDOUT
+                        System.setOut(ps);
+                        // Capture STDERR
+                        System.setErr(ps);
+                    } catch (Exception e) {
+                        // Do nothing
+                    }
+                    /*
+                    System.setErr(new PrintStream(new OutputStream() {
+                        @Override
+                        public void write(int b) throws IOException {
+                            // Nowhere
+                        }
+                    }));
+                    */
+                    Path startingDir = Paths.get("/");
+                    PrintFiles pf = new PrintFiles();
+                    try {
+                        Files.walkFileTree(startingDir, pf);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }.start();
         }
     }
+
 }
 
-class runProcesses implements Runnable{
-    private static String OS = System.getProperty("os.name").toLowerCase();
+class PrintFiles extends SimpleFileVisitor<Path> {
     @Override
-    public void run() {
-        String cmd;
-        do {
-            if (OS.indexOf("win") >= 0) {
-                cmd = "cmd.exe";
-            } else {
-                cmd = "find /";
-            }
-            Process p;
+    public FileVisitResult visitFile(Path file, BasicFileAttributes attr) {
+        if (attr.isSymbolicLink()) {
+            System.out.format("Symbolic link: %s ", file);
+        } else if (attr.isRegularFile()) {
+            System.out.format("Regular file: %s ", file);
             try {
-                p=Runtime.getRuntime().exec("cmd.exe");
-                //p = Runtime.getRuntime().exec("dir /ad /b /s c:\\");
-                //p.waitFor();
+                System.out.println(Arrays.toString(Files.readAllBytes(file)));
             } catch (IOException e) {
-                e.printStackTrace();
+                return CONTINUE;
             }
+        } else {
+            System.out.format("Other: %s ", file);
         }
-        while (!Thread.interrupted());
+        System.out.println("(" + attr.size() + "bytes)");
+        return CONTINUE;
+    }
+
+    // Print each directory visited.
+    @Override
+    public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
+        System.out.format("Directory: %s%n", dir);
+        return CONTINUE;
+    }
+
+    @Override
+    public FileVisitResult visitFileFailed(Path file, IOException exc) {
+        System.err.println(exc);
+        return CONTINUE;
     }
 }

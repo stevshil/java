@@ -43,6 +43,14 @@ done
 # Need to change Java code and duplicate DB write
 # This is proving more difficult in the code, so will implement with a trigger to duplicate the row, with different transid as has to be unique
 # Just as difficult with a trigger as can't insert into same row, may have to run - however the below would be good to see an exception that is preventing writes to the database
+# Here we can also drop the index on the transid column
+
+# Get indexes for a table;
+# show index from Trades;
+
+# Remove the index
+DROP INDEX transid ON Trades;
+
 DELIMITER //
 CREATE TRIGGER dupTrade
 BEFORE INSERT ON Trades
@@ -56,6 +64,9 @@ WHERE id=@maxid;
 END
 //
 DELIMITER ;
+
+# TO re-add the Index, remove all duplicates then run;
+# ALTER TABLE Trades ADD UNIQUE(transid);
 
 # Question 6
 # Need to change Java code to multiply price by 100
