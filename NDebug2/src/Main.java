@@ -27,15 +27,16 @@ public class Main
 
     private static void menu() {
         System.err.println("0. Change Password - requires DBrootPW, DBuserName, DBuserBadPW variables to be set\n" +
-                "1. Check Password\n" +
+                "1. Change Password\n" +
                 "2. Reset Password - requires DBrootPW, DBuserName, DBuserBadPW variables to be set\n" +
                 "3. Service Clash - requires the port number to clash with, you must stop the service first and the service name\n" +
                 "4. Delay Trades\n" +
                 "5. Fill Logs\n" +
                 "6. Duplicate Entries in Database\n" +
-                "7. Set wrong price in database\n" +
-                "8. Start lots of process to slow system\n" +
-                "9. Stop/Start a service");
+                "7. Remove duplicate trigger\n" +
+                "8. Set wrong price in database\n" +
+                "9. Start lots of process to slow system\n" +
+                "10. Stop/Start a service");
     }
 
     public static void main(String[] args)
@@ -58,23 +59,40 @@ public class Main
         }
         //String rootPW = "my-secret-pw";
         String rootPW = System.getenv("DBrootPW");
+        if (rootPW == null ){
+            rootPW="my-secret-pw";
+        }
         String userName = System.getenv("DBuserName");
+        if (userName == null){
+            userName="trades";
+        }
         String userBadPW = System.getenv("DBuserBadPW");
+        if (userBadPW == null) {
+            userBadPW="test";
+        }
         String userPW = System.getenv("DBuserPW");
+        if ( userPW == null ){
+            userPW="trades";
+        }
+        String dbServer = System.getenv("DBServer");
+        if ( dbServer == null ){
+            dbServer="mysql.server";
+        }
+
         int inputValue = Integer.parseInt(args[0]);
 
         switch (inputValue) {
             case 0:
                 // Set the password so that it breaks the trade app
-                ChangePassword(rootPW,userName,userBadPW);
+                ChangePassword(rootPW,userName,userBadPW,dbServer);
                 break;
             case 1:
                 // Next command checks if the user has resolved the issue, so normal user password
-                CheckPassword(userName,userPW);
+                CheckPassword(userName,userPW,dbServer);
                 break;
             case 2:
                 // Reset the user password to trades if the user didn't solve the problem
-                ResetPassword(rootPW,userName,userPW);
+                ResetPassword(rootPW,userName,userPW,dbServer);
                 break;
             case 3:
                 // 8080 = App and 9990 = App JMX - This one must be run in background with nohup or windows equivalent
@@ -83,21 +101,24 @@ public class Main
                 break;
             case 4:
                 // Sets a delay in the database by adding a trigger
-                DelayTrades(Integer.parseInt(runAttribute));
+                DelayTrades(dbServer, userName, userPW, Integer.parseInt(runAttribute));
                 break;
             case 5:
                 fillLogs();
                 break;
             case 6:
-                duplicateEntry();
+                duplicateEntry(rootPW,dbServer);
                 break;
             case 7:
-                wrongPrice(Integer.parseInt(runAttribute));
+                removeDuplicateEntryTrigger(rootPW,dbServer);
                 break;
             case 8:
-                slowDownProcesses(Integer.parseInt(runAttribute));
+                wrongPrice(Integer.parseInt(runAttribute));
                 break;
             case 9:
+                slowDownProcesses(Integer.parseInt(runAttribute));
+                break;
+            case 10:
                 //controlService(runAttribute);
                 break;
             default:
@@ -173,27 +194,29 @@ public class Main
         }
     }
 
-     private static void ChangePassword(String rootPassword, String userName, String userPassword) {
+     private static void ChangePassword(String rootPassword, String userName, String userPassword, String dbServ) {
         try{
-                Class.forName("com.mysql.jdbc.Driver");
-                Connection conn = DriverManager.getConnection("jdbc:mysql://mysql.server:3306/mysql?useSSL=false", "root", rootPassword);
-                //Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/mysql", "root", "my-secret-pw");
-                String sql = "SET PASSWORD FOR '"+userName+"'@'%' = PASSWORD('"+userPassword+"')";
-                Statement stmt = conn.createStatement();
-                stmt.executeQuery(sql);
-                stmt.close();
-                conn.close();
-                System.out.println("Password is changed successfully!");
+            Class.forName("com.mysql.jdbc.Driver");
+            Connection conn = DriverManager.getConnection("jdbc:mysql://"+dbServ+":3306/mysql?useSSL=false", "root", rootPassword);
+            //Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/mysql", "root", "my-secret-pw");
+            String sql = "SET PASSWORD FOR '"+userName+"'@'%' = PASSWORD('"+userPassword+"')";
+            String sql2 = "SET PASSWORD FOR '"+userName+"'@'localhost' = PASSWORD('"+userPassword+"')";
+            Statement stmt = conn.createStatement();
+            stmt.executeQuery(sql);
+            stmt.executeQuery(sql2);
+            stmt.close();
+            conn.close();
+            System.out.println("Password is changed successfully!");
         }
         catch(Exception ex){
-                ex.printStackTrace();
+            ex.printStackTrace();
         }
     }
 
-    private static void CheckPassword(String userName, String userPassword) {
+    private static void CheckPassword(String userName, String userPassword, String dbServ) {
         try{
             Class.forName("com.mysql.jdbc.Driver");
-            Connection conn = DriverManager.getConnection("jdbc:mysql://mysql.server:3306/mysql?useSSL=false", userName, userPassword);
+            Connection conn = DriverManager.getConnection("jdbc:mysql://"+dbServ+":3306/trades?useSSL=false", userName, userPassword);
             String sql = "SELECT * FROM user";
             Statement stmt = conn.createStatement();
             stmt.executeQuery(sql);
@@ -207,13 +230,15 @@ public class Main
         }
     }
 
-    private static void ResetPassword(String rootPassword, String userName, String userPassword) {
+    private static void ResetPassword(String rootPassword, String userName, String userPassword, String dbServ) {
         try{
             Class.forName("com.mysql.jdbc.Driver");
-            Connection conn = DriverManager.getConnection("jdbc:mysql://mysql.server:3306/mysql?useSSL=false", "root", rootPassword);
+            Connection conn = DriverManager.getConnection("jdbc:mysql://"+dbServ+":3306/mysql?useSSL=false", "root", rootPassword);
             String sql = "SET PASSWORD FOR '"+userName+"'@'%' = PASSWORD('"+userPassword+"')";
+            String sql2 = "SET PASSWORD FOR '"+userName+"'@'localhost' = PASSWORD('"+userPassword+"')";
             Statement stmt = conn.createStatement();
             stmt.executeQuery(sql);
+            stmt.executeQuery(sql2);
             stmt.close();
             conn.close();
             System.out.println("Password is changed successfully!");
@@ -259,12 +284,12 @@ public class Main
         }).start();
     }
 
-    private static void DelayTrades(int delaySecs) {
+    private static void DelayTrades(String dbServ, String dbUser, String userPW,int delaySecs) {
         int counter = 0;
         while (true) {
             try {
-                Connection conn = null;
                 Class.forName("com.mysql.jdbc.Driver");
+                Connection conn = DriverManager.getConnection("jdbc:mysql://"+dbServ+":3306/trades?useSSL=false", dbUser, userPW);
                 conn.setAutoCommit(false);
                 conn.setTransactionIsolation(TRANSACTION_SERIALIZABLE);
                 String sql = "INSERT INTO Trades (transid,stock,ptime,price,volume,buysell,state,stime) VALUES('20170712020500722-01','FTSE.LLOY','2017-07-12 02:05:00',95.7974,27000,'B','A','2017-07-12 02:05:01')";
@@ -329,28 +354,23 @@ public class Main
         }
     }
 
-    private static void duplicateEntry() {
+    private static void duplicateEntry(String rtPass,String dbServ) {
         try{
             Class.forName("com.mysql.jdbc.Driver");
-            Connection conn = DriverManager.getConnection("jdbc:mysql://mysql.server:3306/mysql?useSSL=false", "root", "my-secret-pw");
-            //Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/mysql", "root", "my-secret-pw");
-            String sql = "DELIMITER //\n" +
-                    "CREATE TRIGGER dupTrade\n" +
-                    "BEFORE INSERT ON Trades\n" +
-                    "FOR EACH ROW\n" +
-                    "BEGIN\n" +
-                    "set @maxid=(select max(id) from Trades);\n" +
-                    "INSERT INTO Trades (transid,stock,ptime,price,volume,buysell,state,stime)\n" +
-                    "SELECT CONCAT(SUBSTRING(transid,1,LOCATE('-',transid)),'01') as transid, stock, ptime, price, volume, buysell, state, stime\n" +
-                    "FROM Trades\n" +
-                    "WHERE id=@maxid;\n" +
-                    "END\n" +
-                    "//\n" +
-                    "DELIMITER ;";
-            Statement stmt = conn.createStatement();
-            stmt.executeQuery(sql);
-            stmt.close();
+            Connection conn = DriverManager.getConnection("jdbc:mysql://"+dbServ+":3306/trades?useSSL=false", "root", rtPass);
+            Statement stmnt = conn.createStatement();
+
+            stmnt.execute("DROP INDEX if exists transid ON Trades;");
+            stmnt.execute("CREATE TRIGGER dupTrade BEFORE INSERT ON Trades "
+            + "FOR EACH ROW "
+            + "BEGIN "
+            + "set @maxid=(select max(id) from Trades); "
+            + "INSERT INTO Trades (transid,stock,ptime,price,volume,buysell,state,stime) "
+            + "SELECT transid, stock, ptime, price, volume, buysell, state, stime FROM Trades WHERE id=@maxid; "
+            + "END ;");
+            stmnt.close();
             conn.close();
+
             System.out.println("Update successful!");
         }
         catch(Exception ex){
@@ -358,22 +378,38 @@ public class Main
         }
     }
 
+    private static void removeDuplicateEntryTrigger(String rtPass,String dbServ) {
+        try {
+            Class.forName("com.mysql.jdbc.Driver");
+            Connection conn = DriverManager.getConnection("jdbc:mysql://"+dbServ+":3306/trades?useSSL=false", "root", rtPass);
+            //Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/mysql", "root", "my-secret-pw");
+            Statement stmt = conn.createStatement();
+
+            String sql = "DROP TRIGGER if exists dupTrade;";
+            stmt.execute(sql);
+            sql="create index if not exists transid on Trades(transid);";
+            stmt.execute(sql);
+            stmt.close();
+            conn.close();
+            System.out.println("Trigger removed and INDEX re-added");
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     private static void wrongPrice(int bySize) {
         try{
             Class.forName("com.mysql.jdbc.Driver");
             Connection conn = DriverManager.getConnection("jdbc:mysql://mysql.server:3306/mysql?useSSL=false", "root", "my-secret-pw");
-            //Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/mysql", "root", "my-secret-pw");
-            String sql = "DELIMITER //\n" +
-                    "CREATE TRIGGER Trade100\n" +
-                    "BEFORE UPDATE ON Trades\n" +
-                    "FOR EACH ROW\n" +
-                    "BEGIN\n" +
-                    "SET new.price=(select new.price*"+bySize+" from Trades where id=new.id);\n" +
-                    "END\n" +
-                    "//\n" +
-                    "DELIMITER ;";
+
             Statement stmt = conn.createStatement();
-            stmt.executeQuery(sql);
+            stmt.execute("CREATE TRIGGER Trade100 "
+                    + "BEFORE UPDATE ON Trades "
+                    + "FOR EACH ROW "
+                    + "BEGIN "
+                    + "SET new.price=(select new.price*"+bySize+" from Trades where id=new.id); "
+                    + "END ;");
             stmt.close();
             conn.close();
             System.out.println("Update successful!");
