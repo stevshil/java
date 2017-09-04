@@ -290,22 +290,27 @@ public class Main
             try {
                 Class.forName("com.mysql.jdbc.Driver");
                 Connection conn = DriverManager.getConnection("jdbc:mysql://"+dbServ+":3306/trades?useSSL=false", dbUser, userPW);
-                conn.setAutoCommit(false);
-                conn.setTransactionIsolation(TRANSACTION_SERIALIZABLE);
-                String sql = "INSERT INTO Trades (transid,stock,ptime,price,volume,buysell,state,stime) VALUES('20170712020500722-01','FTSE.LLOY','2017-07-12 02:05:00',95.7974,27000,'B','A','2017-07-12 02:05:01')";
+                // conn.setAutoCommit(false);
+                // conn.setTransactionIsolation(TRANSACTION_SERIALIZABLE);
+                // String sql = "INSERT INTO Trades (transid,stock,ptime,price,volume,buysell,state,stime) VALUES('20170712020500722-01','FTSE.LLOY','2017-07-12 02:05:00',95.7974,27000,'B','A','2017-07-12 02:05:01')";
+                String sqlLock = "LOCK TABLES Trades WRITE";
+                String sqlUnlock = "UNLOCK TABLES";
                 Statement stmt = conn.createStatement();
-                stmt.executeUpdate(sql);
+                System.out.println("Running");
+                stmt.execute(sqlLock);
                 try {
                     Thread.sleep(delaySecs*1000);
                     counter++;
-                    System.out.println("Round again "+ (Integer.toString(counter)));
+                    // System.out.println("Round again "+ (Integer.toString(counter)));
                 } catch (InterruptedException ex) {
-                    System.out.println("Can't sleep");
+                    // System.out.println("Can't sleep");
                 }
+                System.out.println("Breathing");
+                stmt.execute(sqlUnlock);
                 try {
-                    conn.rollback();
                     stmt.close();
                     conn.close();
+                    Thread.sleep(delaySecs*1000);
                 } catch (Exception e) {
                     System.out.println("Failed to put something back");
                 }
