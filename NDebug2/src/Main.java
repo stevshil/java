@@ -216,7 +216,7 @@ public class Main
     private static void CheckPassword(String userName, String userPassword, String dbServ) {
         try{
             Class.forName("com.mysql.jdbc.Driver");
-            Connection conn = DriverManager.getConnection("jdbc:mysql://"+dbServ+":3306/trades?useSSL=false", userName, userPassword);
+            Connection conn = DriverManager.getConnection("jdbc:mysql://"+dbServ+":3306/mysql?useSSL=false", userName, userPassword);
             String sql = "SELECT * FROM user";
             Statement stmt = conn.createStatement();
             stmt.executeQuery(sql);
