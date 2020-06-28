@@ -1,5 +1,6 @@
 NDebug2/target/**
 fs-space/out/**
 **/*.jar
+**/*.war
 **/*.class
 **/target/**
