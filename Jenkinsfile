@@ -14,7 +14,7 @@ pipeline {
     }
     stage('Build') {
       steps {
-        dir('cds/CompDiscDaoWithRestAndBoot') {
+          git url: 'https://github.com/stevshil/java.git'
           withMaven (
             maven: 'mvn363',
             mavenLocalRepo: '.repository',
@@ -22,7 +22,6 @@ pipeline {
             sh 'ls -l'
             sh 'mvn -Dmaven.test.skip=true clean package'
           }
-        }
       }
     }
     stage('Test') {
