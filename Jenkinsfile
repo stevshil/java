@@ -1,6 +1,17 @@
 pipeline {
   agent any
   stages {
+    stage('Clone') {
+      steps{
+        checkout([$class: 'GitSCM',
+          branches: [[name: '*/master']],
+          extensions: [
+            [$class: 'RelativeTargetDirectory', relativeTargetDir: '.']
+          ],
+          userRemoteConfigs: [[url: 'https://github.com/stevshil/java.git']]
+        ])
+      }
+    }
     stage('Build') {
       steps {
         dir('CompactDiscDaoWithRestAndBoot') {
