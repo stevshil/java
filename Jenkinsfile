@@ -1,20 +1,9 @@
 pipeline {
   agent any
   stages {
-    stage('Clone source') {
-      steps {
-        checkout([$class: 'GitSCM',
-          branches: [[name: '*/master']],
-          extensions: [
-            [$class: 'RelativeTargetDirectory', relativeTargetDir: 'cds']
-          ],
-          userRemoteConfigs: [[url: 'https://github.com/stevshil/java.git']]
-        ])
-      }
-    }
     stage('Build') {
       steps {
-        dir('cds/CompactDiscDaoWithRestAndBoot') {
+        dir('CompactDiscDaoWithRestAndBoot') {
           withMaven (
             maven: 'mvn363',
             mavenLocalRepo: '.repository',
@@ -27,7 +16,7 @@ pipeline {
     }
     stage('Test') {
       steps {
-        dir('cds/CompactDiscDaoWithRestAndBoot') {
+        dir('CompactDiscDaoWithRestAndBoot') {
           withMaven {
             sh 'mvn test'
           }
