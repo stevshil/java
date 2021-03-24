@@ -15,14 +15,18 @@ pipeline {
     stage('Build') {
       steps {
         dir('cds/CompDiscDaoWithRestAndBoot') {
-          sh 'mvn -Dmaven.test.skip=true clean package'
+          withMaven {
+            sh 'mvn -Dmaven.test.skip=true clean package'
+          }
         }
       }
     }
     stage('Test') {
       steps {
         dir('cds/CompDiscDaoWithRestAndBoot') {
-          sh 'mvn test'
+          withMaven {
+            sh 'mvn test'
+          }
         }
       }
     }
