@@ -19,6 +19,7 @@ pipeline {
             maven: 'mvn363',
             mavenLocalRepo: '.repository',
           ){
+            sh 'ls -l'
             sh 'mvn -Dmaven.test.skip=true clean package'
           }
         }
