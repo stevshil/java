@@ -19,7 +19,6 @@ pipeline {
             maven: 'mvn363',
             mavenLocalRepo: '.repository',
           ){
-            sh 'ls -l'
             sh 'mvn -Dmaven.test.skip=true clean package'
           }
         }
@@ -28,7 +27,10 @@ pipeline {
     stage('Test') {
       steps {
         dir('CompactDiscDaoWithRestAndBoot') {
-          withMaven {
+          withMaven (
+            maven: 'mvn363',
+            mavenLocalRepo: '.repository',
+          ){
             sh 'mvn test'
           }
         }
