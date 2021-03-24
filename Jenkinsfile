@@ -15,7 +15,10 @@ pipeline {
     stage('Build') {
       steps {
         dir('cds/CompDiscDaoWithRestAndBoot') {
-          withMaven {
+          withMaven (
+            maven: 'mvn363',
+            mavenLocalRepo: '.repository',
+          ){
             sh 'mvn -Dmaven.test.skip=true clean package'
           }
         }
