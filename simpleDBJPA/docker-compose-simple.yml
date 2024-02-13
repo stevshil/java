@@ -1,0 +1,10 @@
+version: "3.8"
+
+services:
+  jpadb:
+    build:
+      context: .
+      dockerfile: <NAMEOFYOURDOCKERFILE>
+    image: <NAMEYOURIMAGE>:1.0
+    ports: 
+      - <REPLACEWITHYOURHOSTPORT>:80

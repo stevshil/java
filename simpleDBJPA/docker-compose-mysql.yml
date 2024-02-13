@@ -1,0 +1,21 @@
+version: "3.8"
+
+services:
+  jpadb:
+    build:
+      context: .
+      dockerfile: <NAMEOFYOURDOCKERFILE>
+    image: <NAMEYOURIMAGE>:1.0
+    ports: 
+      - <REPLACEWITHYOURHOSTPORT>:80
+    environment:
+      - DBUSER=root
+      - DBPASS=secret123
+    link:
+      - mysql
+  mysql:
+    image: mariadb:10-jammy
+    environment:
+      - MYSQL_ROOT_PASSWORD=secret123
+      - MYSQL_DATABASE=testdb
+

@@ -24,6 +24,6 @@ Create a build.gradle file using the pom.xml as the reference, or use Spring Ini
 
 3. Create a docker-compose.yml file to build and launch your container.
 
-4. Extend 3 so that you launch a MySQL database.
+4. Extend 3 so that you launch a MySQL/MariaDB database.
 
 5. Create a new application.properties file at the root of this project that will be copied into the container at the same location as the JAR file.  Try to get the app to work with MySQL. 
