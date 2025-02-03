@@ -4,3 +4,4 @@ fs-space/out/**
 **/*.war
 **/*.class
 **/target/**
+**/.idea
